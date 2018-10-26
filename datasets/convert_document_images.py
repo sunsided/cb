@@ -208,16 +208,14 @@ def run(dataset_dir):
   class_names, class_id = _get_labels_map(dataset_dir)
   print(class_names)
   class_names_to_ids = dict(zip(class_names, class_id))
-  #
-  # # Divide into train and test:
-  # random.seed(_RANDOM_SEED)
-  # random.shuffle(photo_filenames)
-  # training_filenames = photo_filenames[_NUM_VALIDATION:]
-  # validation_filenames = photo_filenames[:_NUM_VALIDATION]
-  #
-  # First, convert the training and validation sets.
+
   _convert_dataset(split_name = 'train', dataset_dir = tf_record_directory, image_names = image_names, image_labels = image_labels)
 
+
+  image_names, image_labels = _get_filenames_and_classes(dataset_dir, split_name='val')
+  class_names, class_id = _get_labels_map(dataset_dir)
+  print(class_names)
+  class_names_to_ids = dict(zip(class_names, class_id))
   # _convert_dataset('validation', validation_filenames, class_names_to_ids,
   #                  dataset_dir)
   #
