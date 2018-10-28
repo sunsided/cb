@@ -217,5 +217,12 @@ def run(dataset_dir):
   dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
   print('\nFinished converting the documents dataset!')
 
+def main(_):
+  if not FLAGS.dataset_name:
+    raise ValueError('You must supply the dataset name with --dataset_name')
+  if not FLAGS.dataset_dir:
+    raise ValueError('You must supply the dataset directory with --dataset_dir')
+  run(FLAGS.dataset_dir)
+
 if __name__ == '__main__':
   tf.app.run()
