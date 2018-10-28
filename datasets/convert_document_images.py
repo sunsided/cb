@@ -184,7 +184,7 @@ def _get_labels_map(dataset_dir):
   with open(labels_map_file) as csvFile:
       read_object = csv.reader(csvFile, delimiter= ' ')
       for row in read_object:
-          label_id.append(row[0])
+          label_id.append(int(row[0]))
           label_name.append(row[1])
   return label_name, label_id
 
@@ -214,7 +214,7 @@ def run(dataset_dir):
 
   # Finally, write the labels file:
   labels_to_class_names = dict((v, k) for k, v in class_names_to_ids.items())
-  dataset_utils.write_label_file(class_names_to_ids, dataset_dir)
+  dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
   print('\nFinished converting the documents dataset!')
 
 def main(_):
