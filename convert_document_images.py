@@ -184,7 +184,7 @@ def _get_labels_map(dataset_dir):
   with open(labels_map_file) as csvFile:
       read_object = csv.reader(csvFile, delimiter= ' ')
       for row in read_object:
-          label_id.append(row[0])
+          label_id.append(int(row[0]))
           label_name.append(row[1])
   return label_name, label_id
 
