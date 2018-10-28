@@ -110,7 +110,7 @@ def _get_filenames_and_classes(dataset_dir, split_name):
           file_names.append(final_image_name)
           labels.append(int(row[1]))
           counter+=1
-          if counter>500:
+          if counter>50:
               break
   return file_names, labels
 
@@ -130,7 +130,7 @@ def _convert_dataset(split_name, image_names, image_labels, dataset_dir):
     dataset_dir: The directory where the converted datasets are stored.
   """
   filenames = image_names
-  assert split_name in ['train', 'validation']
+  assert split_name in ['train', 'val']
 
   num_per_shard = int(math.ceil(len(filenames) / float(_NUM_SHARDS)))
 
@@ -208,14 +208,13 @@ def run(dataset_dir):
   class_names, class_id = _get_labels_map(dataset_dir)
   print(class_names)
   class_names_to_ids = dict(zip(class_names, class_id))
-
   _convert_dataset(split_name = 'train', dataset_dir = tf_record_directory, image_names = image_names, image_labels = image_labels)
-
 
   image_names, image_labels = _get_filenames_and_classes(dataset_dir, split_name='val')
   class_names, class_id = _get_labels_map(dataset_dir)
   print(class_names)
   class_names_to_ids = dict(zip(class_names, class_id))
+  _convert_dataset(split_name = 'val', dataset_dir = tf_record_directory, image_names = image_names, image_labels = image_labels)
   # _convert_dataset('validation', validation_filenames, class_names_to_ids,
   #                  dataset_dir)
   #
