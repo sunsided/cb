@@ -50,7 +50,7 @@ tf.app.flags.DEFINE_string(
 
 
 # The number of images in the validation set.
-_NUM_VALIDATION = 350
+_NUM_VALIDATION = 40000
 
 # Seed for repeatability.
 _RANDOM_SEED = 0
@@ -64,16 +64,16 @@ class ImageReader(object):
 
   def __init__(self):
     # Initializes function that decodes RGB JPEG data.
-    self._decode_jpeg_data = tf.placeholder(dtype=tf.string)
-    self._decode_jpeg = tf.image.decode_png(self._decode_jpeg_data, channels=3)
+    self._decode_png_data = tf.placeholder(dtype=tf.string)
+    self._decode_png = tf.image.decode_png(self._decode_png_data, channels=3)
 
   def read_image_dims(self, sess, image_data):
-    image = self.decode_jpeg(sess, image_data)
+    image = self.decode_png(sess, image_data)
     return image.shape[0], image.shape[1]
 
   def decode_jpeg(self, sess, image_data):
-    image = sess.run(self._decode_jpeg,
-                     feed_dict={self._decode_jpeg_data: image_data})
+    image = sess.run(self._decode_png,
+                     feed_dict={self._decode_png_data: image_data})
     assert len(image.shape) == 3
     assert image.shape[2] == 3
     return image
@@ -199,10 +199,6 @@ def run(dataset_dir):
   if not tf.gfile.Exists(tf_record_directory):
     tf.gfile.MakeDirs(tf_record_directory)
 
-  # if _dataset_exists(tf_record_directory):
-  #   print('Dataset files already exist. Exiting without re-creating them.')
-  #   return
-
   # dataset_utils.download_and_uncompress_tarball(_DATA_URL, dataset_dir)
   image_names, image_labels = _get_filenames_and_classes(dataset_dir, split_name='train')
   class_names, class_id = _get_labels_map(dataset_dir)
@@ -213,24 +209,13 @@ def run(dataset_dir):
   image_names, image_labels = _get_filenames_and_classes(dataset_dir, split_name='val')
   class_names, class_id = _get_labels_map(dataset_dir)
   print(class_names)
-  class_names_to_ids = dict(zip(class_names, class_id))
+  #class_names_to_ids = dict(zip(class_names, class_id))
   _convert_dataset(split_name = 'val', dataset_dir = tf_record_directory, image_names = image_names, image_labels = image_labels)
-  # _convert_dataset('validation', validation_filenames, class_names_to_ids,
-  #                  dataset_dir)
-  #
-  # # Finally, write the labels file:
-  # labels_to_class_names = dict(zip(range(len(class_names)), class_names))
-  # dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
-  #
-  # _clean_up_temporary_files(dataset_dir)
-  # print('\nFinished converting the Flowers dataset!')
 
-def main(_):
-  if not FLAGS.dataset_name:
-    raise ValueError('You must supply the dataset name with --dataset_name')
-  if not FLAGS.dataset_dir:
-    raise ValueError('You must supply the dataset directory with --dataset_dir')
-  run(FLAGS.dataset_dir)
+  # Finally, write the labels file:
+  labels_to_class_names = dict((v, k) for k, v in class_names_to_ids.items())
+  dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
+  print('\nFinished converting the documents dataset!')
 
 if __name__ == '__main__':
   tf.app.run()
