@@ -37,7 +37,7 @@ import cv2
 from datasets import dataset_utils
 
 # The number of images in the validation set.
-_NUM_VALIDATION = 500
+_NUM_VALIDATION = 40000
 
 # Seed for repeatability.
 _RANDOM_SEED = 0
@@ -96,9 +96,6 @@ def _get_filenames_and_classes(dataset_dir, split_name):
           print(cv2.imwrite(final_image_name, image))
           file_names.append(final_image_name)
           labels.append(int(row[1]))
-          counter+=1
-          if counter>500:
-              break
   return file_names, labels
 
 def _get_dataset_filename(dataset_dir, split_name, shard_id):
