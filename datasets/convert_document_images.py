@@ -36,21 +36,8 @@ import tensorflow as tf
 import cv2
 from datasets import dataset_utils
 
-FLAGS = tf.app.flags.FLAGS
-
-tf.app.flags.DEFINE_string(
-    'dataset_name',
-    None,
-    'The name of the dataset to convert, one of "cifar10", "flowers", "mnist".')
-
-tf.app.flags.DEFINE_string(
-    'dataset_dir',
-    None,
-    'The directory where the output TFRecords and temporary files are saved.')
-
-
 # The number of images in the validation set.
-_NUM_VALIDATION = 40000
+_NUM_VALIDATION = 500
 
 # Seed for repeatability.
 _RANDOM_SEED = 0
@@ -110,7 +97,7 @@ def _get_filenames_and_classes(dataset_dir, split_name):
           file_names.append(final_image_name)
           labels.append(int(row[1]))
           counter+=1
-          if counter>50:
+          if counter>500:
               break
   return file_names, labels
 
@@ -195,7 +182,7 @@ def run(dataset_dir):
   Args:
     dataset_dir: The dataset directory where the dataset is stored.
   """
-  tf_record_directory = dataset_dir + '/tf_record'
+  tf_record_directory = dataset_dir
   if not tf.gfile.Exists(tf_record_directory):
     tf.gfile.MakeDirs(tf_record_directory)
 
@@ -216,13 +203,3 @@ def run(dataset_dir):
   labels_to_class_names = dict((v, k) for k, v in class_names_to_ids.items())
   dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
   print('\nFinished converting the documents dataset!')
-
-def main(_):
-  if not FLAGS.dataset_name:
-    raise ValueError('You must supply the dataset name with --dataset_name')
-  if not FLAGS.dataset_dir:
-    raise ValueError('You must supply the dataset directory with --dataset_dir')
-  run(FLAGS.dataset_dir)
-
-if __name__ == '__main__':
-  tf.app.run()
