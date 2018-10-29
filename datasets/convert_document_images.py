@@ -164,7 +164,7 @@ def _get_labels_map(dataset_dir):
     subdirectories, representing class names.
   """
   dataset_root = dataset_dir
-  labels_map_file = os.path.join(dataset_root, 'label_map.txt')
+  labels_map_file = os.path.join(dataset_root,'labels', 'label_map.txt')
   label_id = []
   label_name = []
 
