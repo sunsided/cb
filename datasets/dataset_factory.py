@@ -30,6 +30,7 @@ datasets_map = {
     'imagenet': imagenet,
     'mnist': mnist,
     'documents' : documents
+    'standard': standard_dataset
 }
 
 
