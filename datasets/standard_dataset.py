@@ -29,17 +29,16 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'standard_%s_*.tfrecord'
+_FILE_PATTERN = '%s*'
 
-SPLITS_TO_SIZES = {'train': 320000 , 'validation': 40000}
+SPLITS_TO_SIZES = {'train': 432, 'validation': 178}
 
-_NUM_CLASSES = 16
+_NUM_CLASSES = 2
 
 _ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying size.',
     'label': 'A single integer between 0 and 4',
 }
-
 
 def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
   """Gets a dataset tuple with instructions for reading documents images.
@@ -70,15 +69,15 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
     reader = tf.TFRecordReader
 
   keys_to_features = {
-      'image/encoded': tf.FixedLenFeature((), tf.string, default_value=''),
+      'image': tf.FixedLenFeature((), tf.string, default_value=''),
       'image/format': tf.FixedLenFeature((), tf.string, default_value='jpg'),
-      'image/class/label': tf.FixedLenFeature(
+      'label': tf.FixedLenFeature(
           [], tf.int64, default_value=tf.zeros([], dtype=tf.int64)),
   }
 
   items_to_handlers = {
       'image': slim.tfexample_decoder.Image(),
-      'label': slim.tfexample_decoder.Tensor('image/class/label'),
+      'label': slim.tfexample_decoder.Tensor('label'),
   }
 
   decoder = slim.tfexample_decoder.TFExampleDecoder(

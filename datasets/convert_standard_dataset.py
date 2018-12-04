@@ -63,21 +63,12 @@ import threading
 
 import numpy as np
 import tensorflow as tf
+from datasets import dataset_utils
 
-tf.app.flags.DEFINE_string('train_directory', '/tmp/',
-                           'Training data directory')
-tf.app.flags.DEFINE_string('validation_directory', '/tmp/',
-                           'Validation data directory')
-tf.app.flags.DEFINE_string('output_directory', '/tmp/',
-                           'Output data directory')
+# The number of shards per dataset split.
+_NUM_SHARDS = 15
 
-tf.app.flags.DEFINE_integer('train_shards', 2,
-                            'Number of shards in training TFRecord files.')
-tf.app.flags.DEFINE_integer('validation_shards', 2,
-                            'Number of shards in validation TFRecord files.')
-
-tf.app.flags.DEFINE_integer('num_threads', 2,
-                            'Number of threads to preprocess the images.')
+_NUM_THREADS = 5
 
 # The labels file contains a list of valid labels are held in this file.
 # Assumes that the file contains entries as such:
@@ -86,11 +77,8 @@ tf.app.flags.DEFINE_integer('num_threads', 2,
 #   flower
 # where each line corresponds to a label. We map each label contained in
 # the file to an integer corresponding to the line number starting from 0.
-tf.app.flags.DEFINE_string('labels_file', '', 'Labels file')
-
-
-FLAGS = tf.app.flags.FLAGS
-
+OLD_LABEL_FILE = 'orig_labels.txt'
+NEW_LABEL_FILE = 'labels.txt'
 
 def _int64_feature(value):
   """Wrapper for inserting int64 features into Example proto."""
@@ -122,15 +110,15 @@ def _convert_to_example(filename, image_buffer, label, text, height, width):
   image_format = 'JPEG'
 
   example = tf.train.Example(features=tf.train.Features(feature={
-      'image/height': _int64_feature(height),
-      'image/width': _int64_feature(width),
-      'image/colorspace': _bytes_feature(tf.compat.as_bytes(colorspace)),
-      'image/channels': _int64_feature(channels),
-      'image/class/label': _int64_feature(label),
-      'image/class/text': _bytes_feature(tf.compat.as_bytes(text)),
-      'image/format': _bytes_feature(tf.compat.as_bytes(image_format)),
-      'image/filename': _bytes_feature(tf.compat.as_bytes(os.path.basename(filename))),
-      'image/encoded': _bytes_feature(tf.compat.as_bytes(image_buffer))}))
+      'height': _int64_feature(height),
+      'width': _int64_feature(width),
+      'colorspace': _bytes_feature(tf.compat.as_bytes(colorspace)),
+      'channels': _int64_feature(channels),
+      'label': _int64_feature(label),
+      'image_class_text': _bytes_feature(tf.compat.as_bytes(text)),
+      'image_format': _bytes_feature(tf.compat.as_bytes(image_format)),
+      'image_filename': _bytes_feature(tf.compat.as_bytes(os.path.basename(filename))),
+      'image': _bytes_feature(tf.compat.as_bytes(image_buffer))}))
   return example
 
 
@@ -203,8 +191,8 @@ def _process_image(filename, coder):
   return image_data, height, width
 
 
-def _process_image_files_batch(coder, thread_index, ranges, name, filenames,
-                               texts, labels, num_shards):
+def _process_image_files_batch(coder, thread_index, ranges, name, output_directory,
+                               filenames, texts, labels, num_shards):
   """Processes and saves list of images as TFRecord in 1 thread.
   Args:
     coder: instance of ImageCoder to provide TensorFlow image coding utils.
@@ -234,7 +222,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames,
     # Generate a sharded version of the file name, e.g. 'train-00002-of-00010'
     shard = thread_index * num_shards_per_batch + s
     output_filename = '%s-%.5d-of-%.5d' % (name, shard, num_shards)
-    output_file = os.path.join(FLAGS.output_directory, output_filename)
+    output_file = os.path.join(output_directory, output_filename)
     writer = tf.python_io.TFRecordWriter(output_file)
 
     shard_counter = 0
@@ -251,8 +239,10 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames,
         print('SKIPPED: Unexpected error while decoding %s.' % filename)
         continue
 
-      example = _convert_to_example(filename, image_buffer, label,
-                                    text, height, width)
+#      example = _convert_to_example(filename, image_buffer, label,
+                                   # text, height, width)
+      example = dataset_utils.image_to_tfexample(image_buffer, b'jpeg',
+                                                 height, width, label)
       writer.write(example.SerializeToString())
       shard_counter += 1
       counter += 1
@@ -272,7 +262,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames,
   sys.stdout.flush()
 
 
-def _process_image_files(name, filenames, texts, labels, num_shards):
+def _process_image_files(name, output_directory, filenames, texts, labels, num_shards, num_threads):
   """Process and save list of images as TFRecord of Example protos.
   Args:
     name: string, unique identifier specifying the data set
@@ -283,17 +273,15 @@ def _process_image_files(name, filenames, texts, labels, num_shards):
   """
   assert len(filenames) == len(texts)
   assert len(filenames) == len(labels)
-  print(name, ' contains ', len(filenames), ' files')
-  print(name, ' data contains: ', len(labels), ' classes')
 
   # Break all images into batches with a [ranges[i][0], ranges[i][1]].
-  spacing = np.linspace(0, len(filenames), FLAGS.num_threads + 1).astype(np.int)
+  spacing = np.linspace(0, len(filenames), num_threads + 1).astype(np.int)
   ranges = []
   for i in range(len(spacing) - 1):
     ranges.append([spacing[i], spacing[i + 1]])
 
   # Launch a thread for each batch.
-  print('Launching %d threads for spacings: %s' % (FLAGS.num_threads, ranges))
+  print('Launching %d threads for spacings: %s' % (num_threads, ranges))
   sys.stdout.flush()
 
   # Create a mechanism for monitoring when all threads are finished.
@@ -304,7 +292,8 @@ def _process_image_files(name, filenames, texts, labels, num_shards):
 
   threads = []
   for thread_index in range(len(ranges)):
-    args = (coder, thread_index, ranges, name, filenames,
+    args = (coder, thread_index, ranges, name,
+            output_directory, filenames,
             texts, labels, num_shards)
     t = threading.Thread(target=_process_image_files_batch, args=args)
     t.start()
@@ -380,8 +369,31 @@ def _find_image_files(data_dir, labels_file):
         (len(filenames), len(unique_labels), data_dir))
   return filenames, texts, labels
 
+def write_dataset_info(name, filenames, labels):
+  """
+  :param name: dataset split name train/validation
+  :param filenames: list of filenames parsed by find_image_files
+  :param labels: list of labels against each file_name returned by find_image_files
+  :return: does not return anything, only writes the computed stats to disk
+  """
+  num_of_images = len(filenames)
+  num_of_labels = len(np.unique(labels))
+  stats = {'images': num_of_images, 'num_classes': num_of_labels}
+  np.save(name + '_stats.npy', stats)
 
-def _process_dataset(name, directory, num_shards, labels_file):
+def write_class_id_to_label_name_mapping(output_directory, texts, labels):
+    """Convert labels read to
+    Args:
+    :param output_directory: tf record directory
+    :param texts: names of classes
+    :param labels: ids assigned to classes
+    :return:
+    """
+
+    dictionary_of_names_to_id_mapping = dict(zip(labels, texts))
+    dataset_utils.write_label_file(dictionary_of_names_to_id_mapping,output_directory, NEW_LABEL_FILE)
+
+def _process_dataset(name, input_directory, output_directory, num_shards, num_threads, old_labels_file):
   """Process a complete data set and save it as a TFRecord.
   Args:
     name: string, unique identifier specifying the data set.
@@ -389,54 +401,29 @@ def _process_dataset(name, directory, num_shards, labels_file):
     num_shards: integer number of shards for this data set.
     labels_file: string, path to the labels file.
   """
-  filenames, texts, labels = _find_image_files(directory, labels_file)
-  _process_image_files(name, filenames, texts, labels, num_shards)
+  filenames, texts, labels = _find_image_files(input_directory, old_labels_file)
+  # write_dataset_info(name, filenames, labels)
+  write_class_id_to_label_name_mapping(output_directory, texts, labels)
+  _process_image_files(name, output_directory, filenames, texts, labels, num_shards, num_threads)
 
 
-def run(dataset_dir):
-  assert not FLAGS.train_shards % FLAGS.num_threads, (
-      'Please make the FLAGS.num_threads commensurate with FLAGS.train_shards')
-  assert not FLAGS.validation_shards % FLAGS.num_threads, (
-      'Please make the FLAGS.num_threads commensurate with '
-      'FLAGS.validation_shards')
-  print('Saving results to %s' % FLAGS.output_directory)
-
-  """Runs the download and conversion operation.
-
-  Args:
-    dataset_dir: The dataset directory where the dataset is stored.
+def run(input_dataset_dir, output_dataset_dir, num_of_shards, num_of_threads):
   """
-  if not tf.gfile.Exists(dataset_dir):
-    tf.gfile.MakeDirs(dataset_dir)
+  Args:
+    input_dataset_dir: The base directory for the dataset.
+    output_dataset_dir: The directory for saving the tf_records
+    num_of_shards: The number of partitions for tf records
+    num_of_threads: the number of threads to be used where num_of_shards>num_of_threads
+  """
+  _process_dataset(name='train', input_directory=input_dataset_dir + '/train',
+                   output_directory=output_dataset_dir,
+                   num_shards=num_of_shards, num_threads= num_of_threads,
+                   old_labels_file=input_dataset_dir + '/' + OLD_LABEL_FILE)
 
-  if _dataset_exists(dataset_dir):
-    print('Dataset files already exist. Exiting without re-creating them.')
-    return
-
-  dataset_utils.download_and_uncompress_tarball(_DATA_URL, dataset_dir)
-  photo_filenames, class_names = _get_filenames_and_classes(dataset_dir)
-  class_names_to_ids = dict(zip(class_names, range(len(class_names))))
-
-  # Divide into train and test:
-  random.seed(_RANDOM_SEED)
-  random.shuffle(photo_filenames)
-  training_filenames = photo_filenames[_NUM_VALIDATION:]
-  validation_filenames = photo_filenames[:_NUM_VALIDATION]
-
-  # First, convert the training and validation sets.
-  _convert_dataset('train', training_filenames, class_names_to_ids,
-                   dataset_dir)
-  _convert_dataset('validation', validation_filenames, class_names_to_ids,
-                   dataset_dir)
-
-  # Finally, write the labels file:
-  labels_to_class_names = dict(zip(range(len(class_names)), class_names))
-  dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
-
-  _clean_up_temporary_files(dataset_dir)
-  print('\nFinished converting the Flowers dataset!')
-
-
+  _process_dataset(name='validation', input_directory=input_dataset_dir + '/validation',
+                   output_directory=output_dataset_dir,
+                   num_shards=num_of_shards, num_threads= num_of_threads,
+                   old_labels_file=input_dataset_dir + '/' + OLD_LABEL_FILE)
 
 if __name__ == '__main__':
   tf.app.run()
