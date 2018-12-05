@@ -171,8 +171,7 @@ def _process_image(filename, coder):
     width: integer, image width in pixels.
   """
   # Read the image file.
-  with tf.gfile.FastGFile(filename, 'rb') as f:
-    image_data = f.read()
+  image_data = tf.gfile.FastGFile(filename, 'rb').read()
 
   # Convert any PNG to JPEG's for consistency.
   if _is_png(filename):
@@ -239,8 +238,6 @@ def _process_image_files_batch(coder, thread_index, ranges, name, output_directo
         print('SKIPPED: Unexpected error while decoding %s.' % filename)
         continue
 
-#      example = _convert_to_example(filename, image_buffer, label,
-                                   # text, height, width)
       example = dataset_utils.image_to_tfexample(image_buffer, b'jpeg',
                                                  height, width, label)
       writer.write(example.SerializeToString())

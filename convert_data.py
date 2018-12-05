@@ -18,16 +18,10 @@ Usage:
 ```shell
 
 $ python download_and_convert_data.py \
-    --dataset_name=mnist \
-    --dataset_dir=/tmp/mnist
-
-$ python download_and_convert_data.py \
-    --dataset_name=cifar10 \
-    --dataset_dir=/tmp/cifar10
-
-$ python download_and_convert_data.py \
-    --dataset_name=flowers \
-    --dataset_dir=/tmp/flowers
+    --input_dataset_dir=data/random \
+    --output_dataset_dir=data/random_tf \
+    --num_of_shards=5 \
+    --num_of_threads=5
 ```
 """
 from __future__ import absolute_import
@@ -59,7 +53,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'num_of_threads',
     5,
-    'The num of threads to be used for preprocessing and conversion')
+    'The num of threads to be used for conversion')
 
 
 def main(_):
@@ -68,7 +62,8 @@ def main(_):
   if not FLAGS.output_dataset_dir:
     raise ValueError('You must supply the dataset directory with --output_dataset_dir')
 
-  convert_standard_dataset.run(FLAGS.input_dataset_dir, FLAGS.output_dataset_dir, FLAGS.num_of_shards, FLAGS.num_of_threads)
+  convert_standard_dataset.run(FLAGS.input_dataset_dir, FLAGS.output_dataset_dir,
+                               FLAGS.num_of_shards, FLAGS.num_of_threads)
 
 if __name__ == '__main__':
   tf.app.run()
