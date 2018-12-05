@@ -477,8 +477,9 @@ def main(_):
             labels, end_points['AuxLogits'],
             label_smoothing=FLAGS.label_smoothing, weights=0.4,
             scope='aux_loss')
-      tf.losses.softmax_cross_entropy(
-        labels, logits, label_smoothing=FLAGS.label_smoothing, weights=1.0)
+
+      tf.losses.softmax_cross_entropy(labels, logits,
+                                      label_smoothing=FLAGS.label_smoothing, weights=1.0)
       return end_points
 
     # Gather initial summaries.
