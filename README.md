@@ -56,7 +56,7 @@ All 16 float MobileNet V1 models reported in the [MobileNet Paper](https://arxiv
 (\*): Results quoted from the [paper](https://arxiv.org/abs/1603.05027).
 
 ## Preparing the dataset for classification
-1) Create a file structure like this for your data
+*1.* Create a file structure like this for your data
 ```
 $TRAIN_DIR/dog/image0.jpeg
 $TRAIN_DIR/dog/image1.jpg
@@ -86,16 +86,37 @@ sunflowers
 tulips
 ```
 
-2) Convert the file structure to tf_records:
+*2.* Convert the file structure to tf_records:
 ```
-python build_image_data \
-  --train_directory="${TRAIN_DIR}" \
-  --validation_directory="${VALIDATION_DIR}" \
-  --output_directory="${OUTPUT_DIRECTORY}" \
-  --labels_file="${LABELS_FILE}" \
-  --train_shards=128 \
-  --validation_shards=24 \
-  --num_threads=8
+python download_and_convert_data.py \
+    --input_dataset_dir=data/random \
+    --output_dataset_dir=data/random_tf \
+    --num_of_shards=5 \
+    --num_of_threads=5
 ```
 
-3)
+*3.* Download an imagenet pretrained network according to your requirements from the above link:
+```
+    wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
+```
+and the extract it to a directory defined by the checkpoint_path in Step 4.
+*4.* Train your classifier using:
+```
+python train_image_classifier.py \
+    --train_dir=inception_v3_logs \
+    --dataset_dir=random_tf \
+    --dataset_name=standard \
+    --dataset_split_name=train \
+    --model_name=inception_v3 \
+    --checkpoint_path=checkpoints/inception_v3.ckpt \
+    --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits \
+    --trainable_scopes=InceptionV3/Logits \ 
+    --optimizer=adam \ 
+    --log_every_n_steps=100 \
+```
+
+
+## Todos:
+* class balanced cross entropy
+* custom data augmentation pipeline definitions
+* Cylcic Learning Rates
