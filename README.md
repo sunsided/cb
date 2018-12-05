@@ -94,13 +94,16 @@ python download_and_convert_data.py \
     --num_of_shards=5 \
     --num_of_threads=5
 ```
+*3.* Convert the file structure to tf_records:
+Change the training and validation split size in datasets/standard_dataset.py
 
-*3.* Download an imagenet pretrained network according to your requirements from the above link:
+*4.* Download an imagenet pretrained network according to your requirements from the above link:
 ```
     wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
 ```
 and the extract it to a directory defined by the checkpoint_path in Step 4.
-*4.* Train your classifier using:
+
+*5.* Train your classifier using:
 ```
 python train_image_classifier.py \
     --train_dir=inception_v3_logs \

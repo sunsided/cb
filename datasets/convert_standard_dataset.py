@@ -399,7 +399,7 @@ def _process_dataset(name, input_directory, output_directory, num_shards, num_th
     labels_file: string, path to the labels file.
   """
   filenames, texts, labels = _find_image_files(input_directory, old_labels_file)
-  # write_dataset_info(name, filenames, labels)
+  write_dataset_info(name, filenames, labels)
   write_class_id_to_label_name_mapping(output_directory, texts, labels)
   _process_image_files(name, output_directory, filenames, texts, labels, num_shards, num_threads)
 
