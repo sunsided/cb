@@ -88,7 +88,7 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
   if dataset_utils.has_labels(dataset_dir):
     labels_to_names = dataset_utils.read_label_file(dataset_dir)
 
-  return slim.dataset.Dataset(
+  return SPLITS_TO_SIZES[split_name], slim.dataset.Dataset(
       data_sources=file_pattern,
       reader=reader,
       decoder=decoder,
@@ -96,3 +96,4 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
       items_to_descriptions=_ITEMS_TO_DESCRIPTIONS,
       num_classes=_NUM_CLASSES,
       labels_to_names=labels_to_names)
+
