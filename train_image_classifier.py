@@ -203,7 +203,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'train_image_size', None, 'Train image size')
 
-tf.app.flags.DEFINE_integer('num_epochs', None,
+tf.app.flags.DEFINE_integer('num_epochs', 10,
                             'The maximum number of training steps.')
 
 #####################
