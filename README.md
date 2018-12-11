@@ -94,9 +94,7 @@ python download_and_convert_data.py \
     --num_of_shards=5 \
     --num_of_threads=5
 ```
-*3.* Convert the file structure to tf_records:
-Change the training and validation split size in datasets/standard_dataset.py
-
+*3.* Change the training and validation split size in datasets/standard_dataset.py according to your dataset.
 *4.* Download an imagenet pretrained network according to your requirements from the above link:
 ```
     wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
@@ -113,13 +111,26 @@ python train_image_classifier.py \
     --model_name=inception_v3 \
     --checkpoint_path=checkpoints/inception_v3.ckpt \
     --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits \
-    --trainable_scopes=InceptionV3/Logits \ 
+    --trainable_scopes=InceptionV3/Logits,InceptionV3/AuxLogits \ 
     --optimizer=adam \ 
-    --log_every_n_steps=100 \
+    --log_every_n_steps=10 \
+    --num_epochs=100  \
+
+# Always pretrained aux_logits and logits for inception_V3 to conform to your dataset.
+```
+*6.* Evaluation the classifier on validation dataset
+```
+python eval_image_classifier.py \
+    --dataset_name=standard \
+    --dataset_split_name=validation \
+    --dataset_dir=random_tf \
+    --checkpoint_path=inception_v3_logs/
 ```
 
-
-## Todos:
-* class balanced cross entropy
-* custom data augmentation pipeline definitions
-* Cylcic Learning Rates
+## Todos: 
+* Add json logs for viewing on Valohai infrastructure
+* Add custom wrappers for describing optimization policies
+* Add config file based training pipeline definitions
+* Class balanced cross entropy
+* Custom data augmentation pipeline definitions
+* Cyclic Learning Rates(CLR)

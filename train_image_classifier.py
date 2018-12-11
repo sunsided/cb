@@ -203,7 +203,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'train_image_size', None, 'Train image size')
 
-tf.app.flags.DEFINE_integer('max_number_of_steps', None,
+tf.app.flags.DEFINE_integer('num_epochs', 10,
                             'The maximum number of training steps.')
 
 #####################
@@ -415,7 +415,7 @@ def main(_):
     ######################
     # Select the dataset #
     ######################
-    dataset = dataset_factory.get_dataset(
+    split_size, dataset = dataset_factory.get_dataset(
         FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
 
     ######################
@@ -487,6 +487,7 @@ def main(_):
       accuracy = slim.metrics.accuracy(tf.to_int32(tf.argmax(logits, 1)),
                                          tf.to_int32(tf.argmax(labels, 1)))
       tf.add_to_collection('accuracy', accuracy)
+      tf.logging.info(f'accuracy:%s', accuracy)
 
       return end_points
 
@@ -601,7 +602,7 @@ def main(_):
         is_chief=(FLAGS.task == 0),
         init_fn=_get_init_fn(),
         summary_op=summary_op,
-        number_of_steps=FLAGS.max_number_of_steps,
+        number_of_steps=int(FLAGS.num_epochs*(split_size/FLAGS.batch_size)),
         log_every_n_steps=FLAGS.log_every_n_steps,
         save_summaries_secs=FLAGS.save_summaries_secs,
         save_interval_secs=FLAGS.save_interval_secs,

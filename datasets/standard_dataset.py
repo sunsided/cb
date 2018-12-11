@@ -31,9 +31,9 @@ slim = tf.contrib.slim
 
 _FILE_PATTERN = '%s*'
 
-SPLITS_TO_SIZES = {'train': 29147, 'validation': 0}
+SPLITS_TO_SIZES = {'train': 8366, 'validation': 973}
 
-_NUM_CLASSES = 4
+_NUM_CLASSES = 5
 
 _ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying size.',
@@ -93,7 +93,7 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
   if dataset_utils.has_labels(dataset_dir):
     labels_to_names = dataset_utils.read_label_file(dataset_dir)
 
-  return slim.dataset.Dataset(
+  return SPLITS_TO_SIZES[split_name], slim.dataset.Dataset(
       data_sources=file_pattern,
       reader=reader,
       decoder=decoder,

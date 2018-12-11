@@ -13,7 +13,7 @@
       - python convert_data.py --input_dataset_dir=/valohai/inputs/colors --output_dataset_dir=/valohai/inputs/colors_tf --num_of_shards=5 --num_of_threads=5
       - ls -halt /valohai/inputs/colors_tf
       - tar -xzvf /valohai/inputs/model/*.tar.gz -C /valohai/inputs/model
-      - python train_image_classifier.py --train_dir=/valohai/outputs --dataset_dir=/valohai/inputs/colors_tf --dataset_name=standard --dataset_split_name=train --model_name=inception_v3 --checkpoint_path=/valohai/inputs/model/inception_v3.ckpt --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --trainable_scopes=InceptionV3/Logits --optimizer=adam --log_every_n_steps=10
+      - python train_image_classifier.py --train_dir=/valohai/outputs --dataset_dir=/valohai/inputs/colors_tf --dataset_name=standard --dataset_split_name=train --model_name=inception_v3 --checkpoint_path=/valohai/inputs/model/inception_v3.ckpt --checkpoint_exclude_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --trainable_scopes=InceptionV3/Logits,InceptionV3/AuxLogits --optimizer=adam --num_epochs=50 --log_every_n_steps=10
     inputs:
       - name: styles
         default: https://valohaisample.blob.core.windows.net/sample1/hair_styles.zip
